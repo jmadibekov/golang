@@ -1,8 +1,8 @@
+// https://tour.golang.org/concurrency/7
+
 package main
 
 import (
-	"fmt"
-
 	"golang.org/x/tour/tree"
 )
 
@@ -40,18 +40,4 @@ func Same(t1, t2 *tree.Tree) bool {
 	}
 
 	return true
-}
-
-func main() {
-	ch := make(chan int)
-	go Walk(tree.New(5), ch)
-
-	fmt.Println("Testing Walk function")
-	for v := range ch {
-		fmt.Println(v)
-	}
-
-	fmt.Println("Testing Same function")
-	fmt.Println(Same(tree.New(1), tree.New(1)))
-	fmt.Println(Same(tree.New(1), tree.New(2)))
 }
