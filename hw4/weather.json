@@ -1,0 +1,25 @@
+{
+   "CurrentTime": "2021-10-10T19:39:09.1691357+06:00",
+   "Cities": [
+      {
+         "City": "Almaty",
+         "Temperature": 7
+      },
+      {
+         "City": "Nur-Sultan",
+         "Temperature": 9.4
+      },
+      {
+         "City": "London",
+         "Temperature": 18
+      },
+      {
+         "City": "Moscow",
+         "Temperature": 14
+      },
+      {
+         "City": "New-York",
+         "Temperature": 16.1
+      }
+   ]
+}
