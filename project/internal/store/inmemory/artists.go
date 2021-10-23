@@ -39,7 +39,7 @@ func (db *ArtistsRepo) ByID(ctx context.Context, id int) (*models.Artist, error)
 
 	artist, ok := db.data[id]
 	if !ok {
-		return nil, fmt.Errorf("No artist with id %d", id)
+		return nil, fmt.Errorf("no artist with id %d", id)
 	}
 
 	return artist, nil

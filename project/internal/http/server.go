@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -53,6 +54,44 @@ func (s *Server) basicHandler() chi.Router {
 		}
 
 		render.JSON(rw, r, songs)
+	})
+
+	r.Get("/songs/{id}", func(rw http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Fprintf(rw, "Unknown err: %v", err)
+			return
+		}
+
+		song, err := s.store.Songs().ByID(r.Context(), id)
+		if err != nil {
+			fmt.Fprintf(rw, "Unknown err: %v", err)
+			return
+		}
+
+		render.JSON(rw, r, song)
+	})
+
+	r.Put("/songs", func(rw http.ResponseWriter, r *http.Request) {
+		song := new(models.Song)
+		if err := json.NewDecoder(r.Body).Decode(song); err != nil {
+			fmt.Fprintf(rw, "Unknown err: %v", err)
+			return
+		}
+
+		s.store.Songs().Update(r.Context(), song)
+	})
+
+	r.Delete("/songs/{id}", func(rw http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Fprintf(rw, "Unknown err: %v", err)
+			return
+		}
+
+		s.store.Songs().Delete(r.Context(), id)
 	})
 
 	return r

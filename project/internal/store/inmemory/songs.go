@@ -39,7 +39,7 @@ func (db *SongsRepo) ByID(ctx context.Context, id int) (*models.Song, error) {
 
 	song, ok := db.data[id]
 	if !ok {
-		return nil, fmt.Errorf("No song with id %d", id)
+		return nil, fmt.Errorf("no song with id %d", id)
 	}
 
 	return song, nil
