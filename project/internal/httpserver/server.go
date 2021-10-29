@@ -109,6 +109,66 @@ func (s *Server) basicHandler() chi.Router {
 		})
 	})
 
+	// RESTy routes for "artists" resource
+	r.Route("/artists", func(r chi.Router) {
+		r.Post("/", func(rw http.ResponseWriter, r *http.Request) {
+			artist := new(models.Artist)
+			if err := json.NewDecoder(r.Body).Decode(artist); err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			s.Store.Artists().Create(r.Context(), artist)
+		})
+
+		r.Get("/", func(rw http.ResponseWriter, r *http.Request) {
+			artists, err := s.Store.Artists().All(r.Context())
+			if err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			render.JSON(rw, r, artists)
+		})
+
+		r.Get("/{id}", func(rw http.ResponseWriter, r *http.Request) {
+			idStr := chi.URLParam(r, "id")
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			artist, err := s.Store.Artists().ByID(r.Context(), id)
+			if err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			render.JSON(rw, r, artist)
+		})
+
+		r.Put("/", func(rw http.ResponseWriter, r *http.Request) {
+			artist := new(models.Artist)
+			if err := json.NewDecoder(r.Body).Decode(artist); err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			s.Store.Artists().Update(r.Context(), artist)
+		})
+
+		r.Delete("/{id}", func(rw http.ResponseWriter, r *http.Request) {
+			idStr := chi.URLParam(r, "id")
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			s.Store.Artists().Delete(r.Context(), id)
+		})
+	})
 	return r
 }
 
