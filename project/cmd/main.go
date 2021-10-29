@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"example/hello/project/internal/http"
+	"example/hello/project/internal/httpserver"
 	"example/hello/project/internal/store/inmemory"
 	"log"
 )
@@ -10,7 +10,7 @@ import (
 func main() {
 	store := inmemory.NewDB()
 
-	server := http.NewServer(context.Background(), ":8080", store)
+	server := httpserver.NewServer(context.Background(), ":8080", store)
 	if err := server.Run(); err != nil {
 		log.Println(err)
 	}

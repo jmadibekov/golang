@@ -22,7 +22,7 @@ func NewDB() store.Store {
 func (db *DB) Songs() store.SongsRepository {
 	if db.songsRepo == nil {
 		db.songsRepo = &SongsRepo{
-			data: make(map[int]*models.Song),
+			data: models.SampleSongs,
 			mu:   new(sync.RWMutex),
 		}
 	}
@@ -33,7 +33,7 @@ func (db *DB) Songs() store.SongsRepository {
 func (db *DB) Artists() store.ArtistsRepository {
 	if db.artistsRepo == nil {
 		db.artistsRepo = &ArtistsRepo{
-			data: make(map[int]*models.Artist),
+			data: models.SampleArtists,
 			mu:   new(sync.RWMutex),
 		}
 	}
