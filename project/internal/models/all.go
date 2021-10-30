@@ -12,11 +12,11 @@ var SampleArtists = map[int]*Artist{
 
 type Song struct {
 	ID       int    `json:"id"`
-	Name     string `json:"name"`
+	Title    string `json:"title"`
 	ArtistID int    `json:"artist_id"`
 }
 
 var SampleSongs = map[int]*Song{
-	100: {ID: 100, Name: "English Rose", ArtistID: 1},
-	200: {ID: 200, Name: "Up&Up", ArtistID: 2},
+	100: {ID: 100, Title: "English Rose", ArtistID: 1},
+	200: {ID: 200, Title: "Up&Up", ArtistID: 2},
 }

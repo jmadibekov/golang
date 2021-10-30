@@ -181,7 +181,7 @@ func (s *Server) Run() error {
 	}
 	go s.ListenCtxForGT(server)
 
-	log.Println("Server running on", s.Address)
+	log.Printf("http server running on %v", s.Address)
 	return server.ListenAndServe()
 }
 

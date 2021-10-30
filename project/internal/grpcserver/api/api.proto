@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "example/hello/project/internal/grpcserver/api";
+package api;
+
+// ----
+service Songs {
+    rpc CreateOrUpdateSong(Song) returns (Song) {}
+
+    rpc ListSongs(Empty) returns (stream Song) {}
+}
+
+message Empty {
+
+}
+
+message Song {
+    int64 id = 1;
+    string title = 2;
+    int64 artist_id = 3;
+}
