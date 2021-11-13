@@ -1,3 +1,5 @@
+// following great this tutorial: https://www.mongodb.com/blog/post/mongodb-go-driver-tutorial
+
 package main
 
 import (
@@ -31,9 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Printf("Type of client is %T\n", client)
 
 	// check the connection
 	err = client.Ping(ctx, nil)

@@ -6,6 +6,9 @@ import (
 )
 
 type Store interface {
+	Connect(uri string) error
+	Close() error
+
 	Songs() SongsRepository
 	Artists() ArtistsRepository
 }
