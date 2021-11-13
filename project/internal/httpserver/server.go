@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"encoding/json"
 	"example/hello/project/internal/models"
@@ -53,17 +54,25 @@ func (s *Server) basicHandler() chi.Router {
 		r.Post("/", func(rw http.ResponseWriter, r *http.Request) {
 			song := new(models.Song)
 			if err := json.NewDecoder(r.Body).Decode(song); err != nil {
+				rw.WriteHeader(http.StatusUnprocessableEntity)
 				fmt.Fprintf(rw, "Unknown err: %v", err)
 				return
 			}
 
-			s.Store.Songs().Create(r.Context(), song)
+			if err := s.Store.Songs().Create(r.Context(), song); err != nil {
+				rw.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(rw, "DB err: %v", err)
+				return
+			}
+
+			rw.WriteHeader(http.StatusCreated)
 		})
 
 		r.Get("/", func(rw http.ResponseWriter, r *http.Request) {
 			songs, err := s.Store.Songs().All(r.Context())
 			if err != nil {
-				fmt.Fprintf(rw, "Unknown err: %v", err)
+				rw.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(rw, "DB err: %v", err)
 				return
 			}
 
@@ -74,13 +83,15 @@ func (s *Server) basicHandler() chi.Router {
 			idStr := chi.URLParam(r, "id")
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
+				rw.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rw, "Unknown err: %v", err)
 				return
 			}
 
 			song, err := s.Store.Songs().ByID(r.Context(), id)
 			if err != nil {
-				fmt.Fprintf(rw, "Unknown err: %v", err)
+				rw.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(rw, "DB err: %v", err)
 				return
 			}
 
@@ -90,25 +101,47 @@ func (s *Server) basicHandler() chi.Router {
 		r.Put("/", func(rw http.ResponseWriter, r *http.Request) {
 			song := new(models.Song)
 			if err := json.NewDecoder(r.Body).Decode(song); err != nil {
+				rw.WriteHeader(http.StatusUnprocessableEntity)
 				fmt.Fprintf(rw, "Unknown err: %v", err)
 				return
 			}
 
-			s.Store.Songs().Update(r.Context(), song)
+			err := validation.ValidateStruct(
+				song,
+				validation.Field(&song.ID, validation.Required),
+				validation.Field(&song.Title, validation.Required),
+			)
+			if err != nil {
+				rw.WriteHeader(http.StatusUnprocessableEntity)
+				fmt.Fprintf(rw, "Unknown err: %v", err)
+				return
+			}
+
+			if err := s.Store.Songs().Update(r.Context(), song); err != nil {
+				rw.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(rw, "DB err: %v", err)
+				return
+			}
 		})
 
 		r.Delete("/{id}", func(rw http.ResponseWriter, r *http.Request) {
 			idStr := chi.URLParam(r, "id")
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
+				rw.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rw, "Unknown err: %v", err)
 				return
 			}
 
-			s.Store.Songs().Delete(r.Context(), id)
+			if err := s.Store.Songs().Delete(r.Context(), id); err != nil {
+				rw.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(rw, "DB err: %v", err)
+				return
+			}
 		})
 	})
 
+	// TODO: update for artists
 	// RESTy routes for "artists" resource
 	r.Route("/artists", func(r chi.Router) {
 		r.Post("/", func(rw http.ResponseWriter, r *http.Request) {

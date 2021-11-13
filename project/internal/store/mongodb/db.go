@@ -1,3 +1,5 @@
+// MongoDB Go Driver: https://docs.mongodb.com/drivers/go/current/
+
 package mongodb
 
 import (
