@@ -1,2 +1,5 @@
-# golang
-Go language basics and the Tour of Go!
+# Golang
+- Go language basics
+- The tour of go
+- The project
+- Etc
