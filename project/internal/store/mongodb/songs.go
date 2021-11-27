@@ -5,8 +5,10 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"example/hello/project/internal/models"
 	"example/hello/project/internal/store"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,7 +18,13 @@ import (
 
 func (db *DB) Songs() store.SongsRepository {
 	if db.songs == nil {
-		db.songs = NewSongsRepository(db.client)
+		songs, err := NewSongsRepository(db.client)
+
+		if err != nil {
+			log.Fatalf("got an error while creating a %v collection with constraints. Err: %v", "songs", err)
+			return nil
+		}
+		db.songs = songs
 	}
 
 	return db.songs
@@ -28,14 +36,50 @@ type SongsRepository struct {
 	collection *mongo.Collection
 }
 
-func NewSongsRepository(client *mongo.Client) store.SongsRepository {
+func NewSongsRepository(client *mongo.Client) (store.SongsRepository, error) {
+	// if either the database or the collection doesn't exist, the following line will create them
+	songsCollection := client.Database("lostify").Collection("songs")
+	// creating an index so that `ID` field is unique
+	// read more: https://stackoverflow.com/questions/55921098/making-a-unique-field-in-mongo-go-driver
+	_, err := songsCollection.Indexes().CreateOne(
+		context.Background(),
+		mongo.IndexModel{
+			Keys:    bson.D{{Key: "id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SongsRepository{
 		client:     client,
 		collection: client.Database("lostify").Collection("songs"),
+	}, nil
+}
+
+func (c SongsRepository) doesArtistExist(ctx context.Context, song *models.Song) bool {
+	// checks whether artist with `song.ArtistID` exists in the database
+	var artist models.Artist
+
+	filter := bson.M{"id": song.ArtistID}
+
+	artistsCollection := c.client.Database("lostify").Collection("artists")
+
+	if err := artistsCollection.FindOne(ctx, filter).Decode(&artist); err != nil {
+		return false
 	}
+
+	log.Printf("found an artist with artistID %v: %+v\n", song.ArtistID, artist)
+
+	return true
 }
 
 func (c SongsRepository) Create(ctx context.Context, song *models.Song) error {
+	if !c.doesArtistExist(ctx, song) {
+		return errors.New(fmt.Sprintf("artist with id %v doesn't exist", song.ArtistID))
+	}
+
 	insertResult, err := c.collection.InsertOne(ctx, song)
 	if err != nil {
 		return err
@@ -79,7 +123,10 @@ func (c SongsRepository) All(ctx context.Context) ([]*models.Song, error) {
 	}
 
 	// close the cursor once finished
-	cur.Close(ctx)
+	err = cur.Close(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Printf("found multiple songs (array of pointers): %+v\n", songs)
 
@@ -102,6 +149,10 @@ func (c SongsRepository) ByID(ctx context.Context, id int) (*models.Song, error)
 }
 
 func (c SongsRepository) Update(ctx context.Context, song *models.Song) error {
+	if !c.doesArtistExist(ctx, song) {
+		return errors.New(fmt.Sprintf("artist with %+v doesn't exist", song.ArtistID))
+	}
+
 	filter := bson.M{"id": song.ID}
 
 	updateResult, err := c.collection.ReplaceOne(ctx, filter, song)
@@ -110,6 +161,10 @@ func (c SongsRepository) Update(ctx context.Context, song *models.Song) error {
 	}
 
 	log.Printf("matched %v documents and updated %v documents.\n", updateResult.MatchedCount, updateResult.ModifiedCount)
+
+	if updateResult.MatchedCount != 1 {
+		return errors.New("either no or more than one song has been matched")
+	}
 
 	return nil
 }
@@ -122,7 +177,11 @@ func (c SongsRepository) Delete(ctx context.Context, id int) error {
 		return err
 	}
 
-	log.Printf("Deleted %v documents in the songs collection\n", deleteResult.DeletedCount)
+	log.Printf("deleted %v documents in the songs collection\n", deleteResult.DeletedCount)
+
+	if deleteResult.DeletedCount != 1 {
+		return errors.New("either no or more than one song has been matched")
+	}
 
 	return nil
 }
