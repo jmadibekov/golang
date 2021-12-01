@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 
+# Awesome tutorial on containerizing Go application:
+# https://docs.docker.com/language/golang/
 FROM golang:1.17.1-alpine
 
 # Set destination for COPY
