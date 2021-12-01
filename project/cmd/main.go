@@ -6,6 +6,7 @@ import (
 	"example/hello/project/internal/httpserver"
 	"example/hello/project/internal/store"
 	"example/hello/project/internal/store/mongodb"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -13,10 +14,10 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatalf("you didn't specify the type of the server: http or grpc")
+	serverType := os.Getenv("SERVER_TYPE")
+	if serverType == "" {
+		serverType = "http"
 	}
-	serverType := os.Args[1]
 
 	// for graceful termination in case of keyboard interrupt
 	ctx, cancel := context.WithCancel(context.Background())
@@ -49,7 +50,7 @@ func main() {
 		// TODO: grpc server is not fully implemented yet
 		grpcserver.NewServer(":8000", mongodbStore)
 	} else {
-		panic("such server type doesn't exist")
+		panic(fmt.Sprintf("server type %v doesn't exist", serverType))
 	}
 }
 

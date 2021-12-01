@@ -53,6 +53,7 @@ func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (sr *SongResource) AllSongs(rw http.ResponseWriter, r *http.Request) {
+	// TODO: add request parameter 'expand=True' to return all songs with their artist info
 	songs, err := sr.store.Songs().All(r.Context())
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
