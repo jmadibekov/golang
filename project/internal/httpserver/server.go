@@ -2,7 +2,9 @@ package httpserver
 
 import (
 	"context"
+	"example/hello/project/internal/message_broker"
 	"example/hello/project/internal/store"
+	lru "github.com/hashicorp/golang-lru"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +16,8 @@ type Server struct {
 	ctx         context.Context
 	idleConnsCh chan struct{}
 	store       store.Store
+	cache       *lru.TwoQueueCache
+	broker      message_broker.MessageBroker
 
 	Address string
 }
@@ -51,10 +55,11 @@ func (s *Server) basicHandler() chi.Router {
 	})
 
 	// mounting routes of /songs resource
-	songsResource := NewSongResource(s.store)
+	songsResource := NewSongResource(s.store, s.broker, s.cache)
 	r.Mount("/songs", songsResource.Routes())
 
 	// mounting routes of /artists resource
+	// TODO: add cache to artists as well
 	artistsResource := NewArtistResource(s.store)
 	r.Mount("/artists", artistsResource.Routes())
 
@@ -70,7 +75,7 @@ func (s *Server) Run() error {
 	}
 	go s.ListenCtxForGT(server)
 
-	log.Printf("http server running on %v", s.Address)
+	log.Printf("[HTTP] Server running on %v", s.Address)
 	return server.ListenAndServe()
 }
 
@@ -78,10 +83,10 @@ func (s *Server) ListenCtxForGT(server *http.Server) {
 	<-s.ctx.Done() // blocks while context isn't finished
 
 	if err := server.Shutdown(context.Background()); err != nil {
-		log.Println("Got error while shutting down", err)
+		log.Println("[HTTP] Got error while shutting down", err)
 	}
 
-	log.Println("Processed all idle connections")
+	log.Println("[HTTP] Processed all idle connections")
 	close(s.idleConnsCh)
 }
 

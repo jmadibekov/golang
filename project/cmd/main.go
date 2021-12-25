@@ -4,9 +4,12 @@ import (
 	"context"
 	"example/hello/project/internal/grpcserver"
 	"example/hello/project/internal/httpserver"
+	"example/hello/project/internal/message_broker"
+	"example/hello/project/internal/message_broker/kafka"
 	"example/hello/project/internal/store"
 	"example/hello/project/internal/store/mongodb"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"log"
 	"os"
 	"os/signal"
@@ -36,10 +39,31 @@ func main() {
 		}
 	}(mongodbStore)
 
+	// creating in-memory cache
+	cache, err := lru.New2Q(6)
+	if err != nil {
+		panic(err)
+	}
+
+	// connecting to Kafka brokers
+	brokers := []string{"localhost:9092"}
+	broker := kafka.NewBroker(brokers, cache, "peer0")
+	if err := broker.Connect(ctx); err != nil {
+		panic(err)
+	}
+	defer func(broker message_broker.MessageBroker) {
+		err := broker.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(broker)
+
 	if serverType == "http" {
 		server := httpserver.NewServer(ctx,
 			httpserver.WithAddress(":8080"),
 			httpserver.WithStore(mongodbStore),
+			httpserver.WithCache(cache),
+			httpserver.WithBroker(broker),
 		)
 		if err := server.Run(); err != nil {
 			log.Println(err)

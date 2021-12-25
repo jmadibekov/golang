@@ -2,23 +2,29 @@ package httpserver
 
 import (
 	"encoding/json"
+	"example/hello/project/internal/message_broker"
 	"example/hello/project/internal/models"
 	"example/hello/project/internal/store"
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	lru "github.com/hashicorp/golang-lru"
 	"net/http"
 	"strconv"
 )
 
 type SongResource struct {
-	store store.Store
+	store  store.Store
+	broker message_broker.MessageBroker
+	cache  *lru.TwoQueueCache
 }
 
-func NewSongResource(store store.Store) *SongResource {
+func NewSongResource(store store.Store, broker message_broker.MessageBroker, cache *lru.TwoQueueCache) *SongResource {
 	return &SongResource{
-		store: store,
+		store:  store,
+		broker: broker,
+		cache:  cache,
 	}
 }
 
@@ -49,6 +55,12 @@ func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := sr.broker.Cache().Purge(); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(rw, "Received error while purging cache: %v", err)
+		return
+	}
+
 	rw.WriteHeader(http.StatusCreated)
 }
 
@@ -73,6 +85,12 @@ func (sr *SongResource) ByID(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	songFromCache, ok := sr.cache.Get(id)
+	if ok {
+		render.JSON(rw, r, songFromCache)
+		return
+	}
+
 	song, err := sr.store.Songs().ByID(r.Context(), id)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -80,6 +98,7 @@ func (sr *SongResource) ByID(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sr.cache.Add(id, song)
 	render.JSON(rw, r, song)
 }
 
@@ -107,6 +126,12 @@ func (sr *SongResource) UpdateSong(rw http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(rw, "DB err: %v", err)
 		return
 	}
+
+	if err := sr.broker.Cache().Remove(song.ID); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(rw, "Received error while removing %v from cache: %v", song.ID, err)
+		return
+	}
 }
 
 func (sr *SongResource) DeleteSong(rw http.ResponseWriter, r *http.Request) {
@@ -121,6 +146,12 @@ func (sr *SongResource) DeleteSong(rw http.ResponseWriter, r *http.Request) {
 	if err := sr.store.Songs().Delete(r.Context(), id); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(rw, "DB err: %v", err)
+		return
+	}
+
+	if err := sr.broker.Cache().Remove(id); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(rw, "Received error while removing %v from cache: %v", id, err)
 		return
 	}
 }
