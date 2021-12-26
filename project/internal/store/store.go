@@ -15,7 +15,7 @@ type Store interface {
 
 type SongsRepository interface {
 	Create(ctx context.Context, song *models.Song) error
-	All(ctx context.Context) ([]*models.Song, error)
+	All(ctx context.Context, filter *models.Filter) ([]*models.Song, error)
 	ByID(ctx context.Context, id int) (*models.Song, error)
 	Update(ctx context.Context, song *models.Song) error
 	Delete(ctx context.Context, id int) error

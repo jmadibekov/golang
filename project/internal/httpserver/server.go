@@ -4,6 +4,7 @@ import (
 	"context"
 	"example/hello/project/internal/message_broker"
 	"example/hello/project/internal/store"
+	"github.com/go-chi/chi/middleware"
 	lru "github.com/hashicorp/golang-lru"
 	"log"
 	"net/http"
@@ -37,6 +38,12 @@ func NewServer(ctx context.Context, opts ...ServerOption) *Server {
 
 func (s *Server) basicHandler() chi.Router {
 	r := chi.NewRouter()
+
+	// A good base middleware stack
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	r.Get("/", func(rw http.ResponseWriter, r *http.Request) {
 		_, err := rw.Write([]byte("Hello world, I am Lostify!"))

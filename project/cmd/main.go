@@ -27,6 +27,7 @@ func main() {
 	go CatchTermination(cancel)
 
 	// connecting to MongoDB store and deferring the closure of it
+	// TODO: move hardcoded username & pw values to docker-compose.yml or .env file
 	mongodbURI := "mongodb+srv://dbUser:dbUserPassword@cluster0.99ocj.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 	mongodbStore := mongodb.NewDB()
 	if err := mongodbStore.Connect(mongodbURI); err != nil {

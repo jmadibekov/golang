@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/render"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	lru "github.com/hashicorp/golang-lru"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -66,13 +67,29 @@ func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 
 func (sr *SongResource) AllSongs(rw http.ResponseWriter, r *http.Request) {
 	// TODO: add request parameter 'expand=True' to return all songs with their artist info
-	songs, err := sr.store.Songs().All(r.Context())
+	queryValues := r.URL.Query()
+	searchQuery := queryValues.Get("searchQuery")
+
+	songsFromCache, ok := sr.cache.Get(searchQuery)
+	if ok {
+		log.Println("found songs from cache with searchQuery =", searchQuery)
+		render.JSON(rw, r, songsFromCache)
+		return
+	}
+
+	filter := &models.Filter{}
+	if searchQuery != "" {
+		filter.Query = &searchQuery
+	}
+
+	songs, err := sr.store.Songs().All(r.Context(), filter)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(rw, "DB err: %v", err)
 		return
 	}
 
+	sr.cache.Add(searchQuery, songs)
 	render.JSON(rw, r, songs)
 }
 

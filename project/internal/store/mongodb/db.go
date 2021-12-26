@@ -38,7 +38,7 @@ func (db *DB) Connect(uri string) error {
 		return err
 	}
 
-	log.Println("connected to MongoDB!")
+	log.Println("[DB] connected to MongoDB!")
 
 	db.client = client
 	return nil
@@ -51,6 +51,6 @@ func (db *DB) Close() error {
 		return err
 	}
 
-	log.Println("connection to MongoDB closed")
+	log.Println("[DB] closed the connection to MongoDB!")
 	return nil
 }
