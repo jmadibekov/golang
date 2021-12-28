@@ -63,7 +63,7 @@ func main() {
 
 	if serverType == "http" {
 		server := httpserver.NewServer(ctx,
-			httpserver.WithAddress(":8081"),
+			httpserver.WithAddress(":8080"),
 			httpserver.WithStore(mongodbStore),
 			httpserver.WithCache(cache),
 			httpserver.WithBroker(broker),
