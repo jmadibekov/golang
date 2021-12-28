@@ -27,6 +27,7 @@ func main() {
 	go CatchTermination(cancel)
 
 	// connecting to MongoDB store and deferring the closure of it
+	// TODO: move hardcoded username & pw values to docker-compose.yml or .env file
 	mongodbURI := "mongodb+srv://dbUser:dbUserPassword@cluster0.99ocj.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 	mongodbStore := mongodb.NewDB()
 	if err := mongodbStore.Connect(mongodbURI); err != nil {
@@ -47,6 +48,8 @@ func main() {
 
 	// connecting to Kafka brokers
 	brokers := []string{"localhost:9092"}
+	// try setting different peers ("peer1", "peer2", etc) and running in parallel
+	// but don't forget to set different ports as well (8080, 8081, etc)
 	broker := kafka.NewBroker(brokers, cache, "peer0")
 	if err := broker.Connect(ctx); err != nil {
 		panic(err)

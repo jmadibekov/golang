@@ -9,6 +9,7 @@ import (
 	"example/hello/project/internal/models"
 	"example/hello/project/internal/store"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -90,7 +91,7 @@ func (c SongsRepository) Create(ctx context.Context, song *models.Song) error {
 	return nil
 }
 
-func (c SongsRepository) All(ctx context.Context) ([]*models.Song, error) {
+func (c SongsRepository) All(ctx context.Context, filter *models.Filter) ([]*models.Song, error) {
 	// pass these options to the Find method
 	findOptions := options.Find()
 	// page size is set to 10
@@ -99,8 +100,17 @@ func (c SongsRepository) All(ctx context.Context) ([]*models.Song, error) {
 	// here's an array in which you can store the decoded documents
 	var songs []*models.Song
 
-	// passing bson.D{{}} as the filter matches all documents in the collection
-	cur, err := c.collection.Find(ctx, bson.D{{}}, findOptions)
+	// bson.D{{}} corresponds to the filter that matches all documents in the collection
+	bsonFilter := bson.D{{}}
+	if filter.Query != nil {
+		// finds any songs with title that contains filter.Query (case insensitive search)
+		// https://docs.mongodb.com/v4.4/tutorial/query-documents/
+		// https://stackoverflow.com/questions/3305561/how-to-query-mongodb-with-like
+		bsonFilter = bson.D{
+			{"title", primitive.Regex{Pattern: *filter.Query, Options: "i"}},
+		}
+	}
+	cur, err := c.collection.Find(ctx, bsonFilter, findOptions)
 	if err != nil {
 		return nil, err
 	}

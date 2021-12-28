@@ -4,6 +4,7 @@ import (
 	"context"
 	"example/hello/project/internal/message_broker"
 	lru "github.com/hashicorp/golang-lru"
+	"log"
 )
 
 type Broker struct {
@@ -26,6 +27,7 @@ func (b *Broker) Connect(ctx context.Context) error {
 			return err
 		}
 	}
+	log.Println("[MessageBroker] connected to all available brokers")
 
 	return nil
 }

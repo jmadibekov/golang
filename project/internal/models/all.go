@@ -17,3 +17,7 @@ type Song struct {
 	Title    string `json:"title"`
 	ArtistID int    `json:"artist_id"`
 }
+
+type Filter struct {
+	Query *string `json:"query"`
+}
