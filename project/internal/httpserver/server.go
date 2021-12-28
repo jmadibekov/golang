@@ -66,8 +66,7 @@ func (s *Server) basicHandler() chi.Router {
 	r.Mount("/songs", songsResource.Routes())
 
 	// mounting routes of /artists resource
-	// TODO: add cache to artists as well
-	artistsResource := NewArtistResource(s.store)
+	artistsResource := NewArtistResource(s.store, s.broker, s.cache)
 	r.Mount("/artists", artistsResource.Routes())
 
 	return r

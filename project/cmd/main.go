@@ -48,6 +48,8 @@ func main() {
 
 	// connecting to Kafka brokers
 	brokers := []string{"localhost:9092"}
+	// try setting different peers ("peer1", "peer2", etc) and running in parallel
+	// but don't forget to set different ports as well (8080, 8081, etc)
 	broker := kafka.NewBroker(brokers, cache, "peer0")
 	if err := broker.Connect(ctx); err != nil {
 		panic(err)
@@ -61,7 +63,7 @@ func main() {
 
 	if serverType == "http" {
 		server := httpserver.NewServer(ctx,
-			httpserver.WithAddress(":8080"),
+			httpserver.WithAddress(":8081"),
 			httpserver.WithStore(mongodbStore),
 			httpserver.WithCache(cache),
 			httpserver.WithBroker(broker),

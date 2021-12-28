@@ -109,7 +109,6 @@ func (c SongsRepository) All(ctx context.Context, filter *models.Filter) ([]*mod
 		bsonFilter = bson.D{
 			{"title", primitive.Regex{Pattern: *filter.Query, Options: "i"}},
 		}
-
 	}
 	cur, err := c.collection.Find(ctx, bsonFilter, findOptions)
 	if err != nil {

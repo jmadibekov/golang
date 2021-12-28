@@ -42,11 +42,26 @@ func (sr *SongResource) Routes() chi.Router {
 	return r
 }
 
+func validateSong(song *models.Song) error {
+	return validation.ValidateStruct(
+		song,
+		validation.Field(&song.ID, validation.Required),
+		validation.Field(&song.Title, validation.Required),
+		validation.Field(&song.ArtistID, validation.Required),
+	)
+}
+
 func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 	song := new(models.Song)
 	if err := json.NewDecoder(r.Body).Decode(song); err != nil {
 		rw.WriteHeader(http.StatusUnprocessableEntity)
 		_, _ = fmt.Fprintf(rw, "Unknown err: %v", err)
+		return
+	}
+
+	if err := validateSong(song); err != nil {
+		rw.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = fmt.Fprintf(rw, "Validation err: %v", err)
 		return
 	}
 
@@ -66,16 +81,16 @@ func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (sr *SongResource) AllSongs(rw http.ResponseWriter, r *http.Request) {
+	dataFromCache, ok := sr.cache.Get(r.RequestURI)
+	if ok {
+		log.Println("found data from cache with URI =", r.RequestURI)
+		render.JSON(rw, r, dataFromCache)
+		return
+	}
+
 	// TODO: add request parameter 'expand=True' to return all songs with their artist info
 	queryValues := r.URL.Query()
 	searchQuery := queryValues.Get("searchQuery")
-
-	songsFromCache, ok := sr.cache.Get(searchQuery)
-	if ok {
-		log.Println("found songs from cache with searchQuery =", searchQuery)
-		render.JSON(rw, r, songsFromCache)
-		return
-	}
 
 	filter := &models.Filter{}
 	if searchQuery != "" {
@@ -89,11 +104,18 @@ func (sr *SongResource) AllSongs(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sr.cache.Add(searchQuery, songs)
+	sr.cache.Add(r.RequestURI, songs)
 	render.JSON(rw, r, songs)
 }
 
 func (sr *SongResource) ByID(rw http.ResponseWriter, r *http.Request) {
+	dataFromCache, ok := sr.cache.Get(r.RequestURI)
+	if ok {
+		log.Println("found data from cache with URI =", r.RequestURI)
+		render.JSON(rw, r, dataFromCache)
+		return
+	}
+
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -101,13 +123,6 @@ func (sr *SongResource) ByID(rw http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(rw, "Unknown err: %v", err)
 		return
 	}
-
-	songFromCache, ok := sr.cache.Get(id)
-	if ok {
-		render.JSON(rw, r, songFromCache)
-		return
-	}
-
 	song, err := sr.store.Songs().ByID(r.Context(), id)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -115,7 +130,7 @@ func (sr *SongResource) ByID(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sr.cache.Add(id, song)
+	sr.cache.Add(r.RequestURI, song)
 	render.JSON(rw, r, song)
 }
 
@@ -127,14 +142,9 @@ func (sr *SongResource) UpdateSong(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := validation.ValidateStruct(
-		song,
-		validation.Field(&song.ID, validation.Required),
-		validation.Field(&song.Title, validation.Required),
-	)
-	if err != nil {
+	if err := validateSong(song); err != nil {
 		rw.WriteHeader(http.StatusUnprocessableEntity)
-		_, _ = fmt.Fprintf(rw, "Unknown err: %v", err)
+		_, _ = fmt.Fprintf(rw, "Validation err: %v", err)
 		return
 	}
 
@@ -144,9 +154,9 @@ func (sr *SongResource) UpdateSong(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sr.broker.Cache().Remove(song.ID); err != nil {
+	if err := sr.broker.Cache().Purge(); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(rw, "Received error while removing %v from cache: %v", song.ID, err)
+		_, _ = fmt.Fprintf(rw, "Received error while purging cache: %v", err)
 		return
 	}
 }
@@ -166,9 +176,9 @@ func (sr *SongResource) DeleteSong(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sr.broker.Cache().Remove(id); err != nil {
+	if err := sr.broker.Cache().Purge(); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(rw, "Received error while removing %v from cache: %v", id, err)
+		_, _ = fmt.Fprintf(rw, "Received error while purging cache: %v", err)
 		return
 	}
 }
