@@ -173,6 +173,15 @@ func (sr *SongResource) getLyrics(song *models.Song, trackID string) error {
 	return nil
 }
 
+// Simple Saga Pattern
+// Two services: , the other with external API
+//  A) one works with DB
+//		- setTemporaryStatus
+//		- setFailedStatus
+//		- setFinalStatus
+//	B) the other works with external API
+//		- searchForSong
+//		- getLyrics
 func (sr *SongResource) fetchTheLyrics(song *models.Song) error {
 	log.Println("starting to get the lyrics for", song)
 
