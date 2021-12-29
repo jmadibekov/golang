@@ -14,6 +14,7 @@ type Store interface {
 }
 
 type SongsRepository interface {
+	GetArtist(ctx context.Context, song *models.Song) (*models.Artist, error)
 	Create(ctx context.Context, song *models.Song) error
 	All(ctx context.Context, filter *models.Filter) ([]*models.Song, error)
 	ByID(ctx context.Context, id int) (*models.Song, error)
