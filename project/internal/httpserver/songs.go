@@ -101,6 +101,8 @@ func makeAPICall(apiURL string) ([]byte, error) {
 }
 
 // Returns the "track_id" needed to get the lyrics of the song
+// Checkout the MusixMatch Lyrics API at: https://developer.musixmatch.com/documentation
+// Great tutorial on parsing JSON response: https://www.sohamkamani.com/golang/json/#decoding-json-to-maps---unstructured-data
 func (sr *SongResource) searchForSong(song *models.Song) (string, error) {
 	artist, err := sr.store.Songs().GetArtist(context.TODO(), song)
 	if err != nil {
@@ -182,6 +184,8 @@ func (sr *SongResource) getLyrics(song *models.Song, trackID string) error {
 //	B) the other works with external API
 //		- searchForSong
 //		- getLyrics
+//
+// read more about Saga pattern at: https://docs.microsoft.com/en-us/azure/architecture/reference-architectures/saga/saga
 func (sr *SongResource) fetchTheLyrics(song *models.Song) error {
 	log.Println("starting to get the lyrics for", song)
 
