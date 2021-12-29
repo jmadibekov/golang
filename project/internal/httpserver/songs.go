@@ -236,15 +236,15 @@ func (sr *SongResource) CreateSong(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sr.broker.Cache().Purge(); err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(rw, "Received error while purging cache: %v", err)
-		return
-	}
-
 	if err := sr.fetchTheLyrics(song); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Println("Received error while fetching lyrics:", err)
+		return
+	}
+
+	if err := sr.broker.Cache().Purge(); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(rw, "Received error while purging cache: %v", err)
 		return
 	}
 
