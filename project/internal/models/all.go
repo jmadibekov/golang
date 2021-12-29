@@ -16,6 +16,9 @@ type Song struct {
 	ID       int    `json:"id"`
 	Title    string `json:"title"`
 	ArtistID int    `json:"artist_id"`
+	// the following fields are fetched from musixmatch API
+	Lyrics    string `json:"lyrics"`
+	AlbumName string `json:"album_name"`
 }
 
 type Filter struct {

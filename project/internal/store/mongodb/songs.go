@@ -59,7 +59,7 @@ func NewSongsRepository(client *mongo.Client) (store.SongsRepository, error) {
 	}, nil
 }
 
-func (c SongsRepository) doesArtistExist(ctx context.Context, song *models.Song) bool {
+func (c SongsRepository) GetArtist(ctx context.Context, song *models.Song) (*models.Artist, error) {
 	// checks whether artist with `song.ArtistID` exists in the database
 	var artist models.Artist
 
@@ -68,16 +68,17 @@ func (c SongsRepository) doesArtistExist(ctx context.Context, song *models.Song)
 	artistsCollection := c.client.Database("lostify").Collection("artists")
 
 	if err := artistsCollection.FindOne(ctx, filter).Decode(&artist); err != nil {
-		return false
+		return nil, err
 	}
 
 	log.Printf("found an artist with artistID %v: %+v\n", song.ArtistID, artist)
 
-	return true
+	return &artist, nil
 }
 
 func (c SongsRepository) Create(ctx context.Context, song *models.Song) error {
-	if !c.doesArtistExist(ctx, song) {
+	_, err := c.GetArtist(ctx, song)
+	if err != nil {
 		return errors.New(fmt.Sprintf("artist with id %v doesn't exist", song.ArtistID))
 	}
 
@@ -159,7 +160,8 @@ func (c SongsRepository) ByID(ctx context.Context, id int) (*models.Song, error)
 }
 
 func (c SongsRepository) Update(ctx context.Context, song *models.Song) error {
-	if !c.doesArtistExist(ctx, song) {
+	_, err := c.GetArtist(ctx, song)
+	if err != nil {
 		return errors.New(fmt.Sprintf("artist with %+v doesn't exist", song.ArtistID))
 	}
 
